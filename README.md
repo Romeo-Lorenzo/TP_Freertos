@@ -43,6 +43,11 @@ STM32L476RG
 - Activation de **FreeRTOS (CMSIS V1)**.  
 - Mise en place d’un **Shell UART** dans une tâche FreeRTOS, avec gestion par interruptions.
 
+- <img width="484" height="126" alt="image" src="https://github.com/user-attachments/assets/a1c2d2a2-7c07-4995-b3df-5dae59972871" />
+<img width="684" height="491" alt="image" src="https://github.com/user-attachments/assets/4a207b2e-7af0-4c6b-9b52-8e14648cf6c9" />
+Puis on active la fonction shell_run dans une tache afin de ne pas bloquer l'acces au scheduler.
+
+
 ### 3.2 GPIO Expander et VU-Mètre
 - Configuration du bus **SPI** pour le GPIO Expander.  
 - Test de clignotement et chenillard sur les LED.  
