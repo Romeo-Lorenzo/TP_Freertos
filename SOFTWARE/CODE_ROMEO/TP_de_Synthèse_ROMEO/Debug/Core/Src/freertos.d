@@ -44,6 +44,7 @@ Core/Src/freertos.o: ../Core/Src/freertos.c \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/queue.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/event_groups.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/timers.h \
+ ../Core/Inc/usart.h ../Core/Inc/main.h \
  C:/Users/lorenzo/Documents/GitHub/TP_Freertos/SOFTWARE/CODE_ROMEO/TP_de_Synthèse_ROMEO/Core/shell/shell.h \
  C:/Users/lorenzo/Documents/GitHub/TP_Freertos/SOFTWARE/CODE_ROMEO/TP_de_Synthèse_ROMEO/Core/shell/drv_uart2.h
 ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h:
@@ -92,5 +93,7 @@ Core/Src/freertos.o: ../Core/Src/freertos.c \
 ../Middlewares/Third_Party/FreeRTOS/Source/include/queue.h:
 ../Middlewares/Third_Party/FreeRTOS/Source/include/event_groups.h:
 ../Middlewares/Third_Party/FreeRTOS/Source/include/timers.h:
+../Core/Inc/usart.h:
+../Core/Inc/main.h:
 C:/Users/lorenzo/Documents/GitHub/TP_Freertos/SOFTWARE/CODE_ROMEO/TP_de_Synthèse_ROMEO/Core/shell/shell.h:
 C:/Users/lorenzo/Documents/GitHub/TP_Freertos/SOFTWARE/CODE_ROMEO/TP_de_Synthèse_ROMEO/Core/shell/drv_uart2.h:

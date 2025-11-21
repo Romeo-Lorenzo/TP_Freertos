@@ -21,7 +21,7 @@ typedef struct{
 static int shell_func_list_size = 0;
 static shell_func_t shell_func_list[SHELL_FUNC_LIST_MAX_SIZE];
 
-static char print_buffer[BUFFER_SIZE];
+char print_buffer[BUFFER_SIZE];
 
 static char uart_read() {
 	char c;
@@ -68,7 +68,7 @@ int shell_add(char c, int (* pfunc)(int argc, char ** argv), char * description)
 	return -1;
 }
 
-static int shell_exec(char * buf) {
+int shell_exec(char * buf) {
 	int i;
 
 	char c = buf[0];
