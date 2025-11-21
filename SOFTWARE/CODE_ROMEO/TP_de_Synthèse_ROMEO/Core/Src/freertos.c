@@ -184,7 +184,7 @@ void StartShellTask(void const * argument)
 		char c;
 		if (xQueueReceive(uart_rx_queue, &c, portMAX_DELAY) == pdPASS)
 		{
-			HAL_UART_Transmit(&huart2, &c, 1, HAL_MAX_DELAY);
+			HAL_UART_Transmit(&huart2, (uint8_t*)&c, 1, HAL_MAX_DELAY);
 			switch(c)
 			{
 			case '\r':
@@ -199,7 +199,8 @@ void StartShellTask(void const * argument)
 					shell_exec(cmd_buffer);                         // Exécution !
 				}
 
-				printf("%s", prompt);                               // Nouveau prompt
+				printf("%s", prompt);
+				fflush(stdout);
 				pos = 0;
 				break;
 
