@@ -24,8 +24,6 @@
 #include "cmsis_os.h"
 #include <string.h>
 
-extern h_shell_t my_shell;
-static uint8_t rx_byte;  // Buffer temporaire pour l'IT
 /* USER CODE END 0 */
 
 UART_HandleTypeDef huart2;
@@ -36,16 +34,7 @@ void MX_USART2_UART_Init(void)
 {
 
   /* USER CODE BEGIN USART2_Init 0 */
-	my_shell.rx_queue = xQueueCreate(128, sizeof(char));
 
-	if (my_shell.rx_queue == NULL) {
-	    // Erreur : gère-la (LED clignote ou crash)
-	    while(1);
-	    printf("ERR: Rx queue null");
-	}
-
-	// Démarre la réception IT initiale
-	HAL_UART_Receive_IT(&huart2, &rx_byte, 1);
   /* USER CODE END USART2_Init 0 */
 
   /* USER CODE BEGIN USART2_Init 1 */
@@ -66,7 +55,6 @@ void MX_USART2_UART_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN USART2_Init 2 */
-  HAL_UART_Receive_IT(&huart2, &rx_char, 1);
   /* USER CODE END USART2_Init 2 */
 
 }
@@ -136,19 +124,5 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
 }
 
 /* USER CODE BEGIN 1 */
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-{
-    if (huart == &huart2) {
-        BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 
-        // Envoie le octet dans la queue DEPUIS l'ISR
-        xQueueSendFromISR(my_shell.rx_queue, &rx_byte, &xHigherPriorityTaskWoken);
-
-        // Force un yield si une tâche de plus haute prio s'est réveillée
-        portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-
-        // Réarme l'IT pour le prochain octet
-        HAL_UART_Receive_IT(&huart2, &rx_byte, 1);
-    }
-}
 /* USER CODE END 1 */

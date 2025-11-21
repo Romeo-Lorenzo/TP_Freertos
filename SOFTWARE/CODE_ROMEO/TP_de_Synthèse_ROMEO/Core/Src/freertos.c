@@ -49,7 +49,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
-h_shell_t h_shell;
+
 /* USER CODE END Variables */
 osThreadId defaultTaskHandle;
 osThreadId shellTaskHandle;
@@ -152,83 +152,19 @@ void StartDefaultTask(void const * argument)
 void StartShellTask(void const * argument)
 {
 	/* USER CODE BEGIN StartShellTask */
-	//	int fonction(h_shell_t * h_shell, int argc, char ** argv)
-	//	{
-	//		int size = snprintf (h_shell->print_buffer, BUFFER_SIZE, "Je suis une fonction bidon\r\n");
-	//		h_shell->drv.transmit(h_shell->print_buffer, size);
-	//
-	//		return 0;
-	//	}
-	//
-	//	h_shell.drv.receive = drv_uart2_receive;
-	//	h_shell.drv.transmit = drv_uart2_transmit;
-	//
-	//	shell_init(&h_shell);
-	//	shell_add(&h_shell, 'f', fonction, "Une fonction inutile");
+	int fonction(int argc, char ** argv)
+	{
+		printf("Je suis une fonction bidon\r\n");
 
-	h_shell_t *h_shell = (h_shell_t *)pvParameters;  // Récupère l'instance shell
-	shell_driver_t *drv = &h_shell->drv;  // Si tu as déjà drv, sinon adapte
-
-	const char backspace[] = "\b \b";
-	const char prompt[] = "> ";
+		return 0;
+	}
+	shell_init();
+	shell_add('f', fonction, "Une fonction inutile");
 
 	/* Infinite loop */
 	for(;;)
 	{
-		// Affiche le prompt
-		h_shell->drv.transmit((uint8_t *)prompt, 2);
-
-		int reading = 1;
-		int pos = 0;
-		h_shell->cmd_buffer[0] = '\0';  // Reset buffer
-
-		while (reading) {
-			char c;
-
-			// NOUVEAU : Attente non-bloquante via queue FreeRTOS
-			// portMAX_DELAY = bloque indéfiniment, mais proprement (0 CPU)
-			if (xQueueReceive(h_shell->rx_queue, &c, portMAX_DELAY) == pdPASS) {
-
-				int size;
-				switch (c) {
-				// Retour chariot
-				case '\r':
-				case '\n':
-					size = snprintf(h_shell->print_buffer, BUFFER_SIZE, "\r\n");
-					h_shell->drv.transmit((uint8_t *)h_shell->print_buffer, size);
-
-					h_shell->cmd_buffer[pos] = '\0';  // Termine la string
-
-					// Debug : affiche la commande
-					size = snprintf(h_shell->print_buffer, BUFFER_SIZE, "Exec: %s\r\n", h_shell->cmd_buffer);
-					h_shell->drv.transmit((uint8_t *)h_shell->print_buffer, size);
-
-					// Exécute la commande
-					shell_exec(h_shell, h_shell->cmd_buffer);
-
-					reading = 0;  // Sort de la boucle de lecture
-					break;
-
-					// Backspace
-				case '\b':
-				case 0x7F:  // DEL aussi
-					if (pos > 0) {
-						pos--;
-						h_shell->drv.transmit((uint8_t *)backspace, 3);
-					}
-					break;
-
-					// Caractères normaux
-				default:
-					if (pos < BUFFER_SIZE - 1) {
-						h_shell->drv.transmit(&c, 1);
-						h_shell->cmd_buffer[pos++] = c;
-					}
-					break;
-				}
-			}
-		}
-		pos = 0;  // Reset pour prochaine ligne
+		shell_run();
 	}
 	/* USER CODE END StartShellTask */
 }
