@@ -25,7 +25,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "shell.h"
+#include "MCP23S17.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -45,18 +46,52 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
-
+extern h_shell_t shellstruct;
+QueueHandle_t uartRxQueue;
 /* USER CODE END Variables */
 osThreadId defaultTaskHandle;
 osThreadId SecondTaskHandle;
+osThreadId ShellTaskHandle;
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
+int fonction(h_shell_t * h_shell, int argc, char ** argv)
+{
+	int size = snprintf (h_shell->print_buffer, BUFFER_SIZE, "Je suis une fonction bidon\r\n");
+	h_shell->drv.transmit(h_shell->print_buffer, size);
+
+	return 0;
+}
+
+
+int fonction_led(h_shell_t * h_shell, int argc, char ** argv)
+{
+	if(argc!=3){
+		int size = snprintf (h_shell->print_buffer, BUFFER_SIZE, "mauvais arg\r\n");
+		h_shell->drv.transmit(h_shell->print_buffer, size);
+		return 0;
+	}
+	else{
+		if(*argv[2]){
+			MCP23S17_SetPin( *argv[1]&0xFF, 0 );
+			int size = snprintf (h_shell->print_buffer, BUFFER_SIZE, "LED n°%d\r\n",*argv[1]&0xFF);
+			h_shell->drv.transmit(h_shell->print_buffer, size);
+		}
+		else{
+
+		}
+	}
+
+
+
+	return 0;
+}
 
 /* USER CODE END FunctionPrototypes */
 
 void StartDefaultTask(void const * argument);
 void StartTask02(void const * argument);
+void Startshelltask(void const * argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -100,6 +135,10 @@ void MX_FREERTOS_Init(void) {
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
+	uartRxQueue = xQueueCreate(128, sizeof(uint8_t));
+
+
+
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
@@ -110,6 +149,10 @@ void MX_FREERTOS_Init(void) {
   /* definition and creation of SecondTask */
   osThreadDef(SecondTask, StartTask02, osPriorityNormal, 0, 256);
   SecondTaskHandle = osThreadCreate(osThread(SecondTask), NULL);
+
+  /* definition and creation of ShellTask */
+  osThreadDef(ShellTask, Startshelltask, osPriorityNormal, 0, 256);
+  ShellTaskHandle = osThreadCreate(osThread(ShellTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -151,9 +194,36 @@ void StartTask02(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+
+
+    osDelay(100);
   }
   /* USER CODE END StartTask02 */
+}
+
+/* USER CODE BEGIN Header_Startshelltask */
+/**
+* @brief Function implementing the ShellTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_Startshelltask */
+void Startshelltask(void const * argument)
+{
+  /* USER CODE BEGIN Startshelltask */
+
+
+	  shell_init(&shellstruct);
+	  shell_add(&shellstruct, 'f', fonction, "Une fonction inutile");
+	  shell_add(&shellstruct, 'l', fonction_led, "control des led");
+  /* Infinite loop */
+  for(;;)
+  {
+
+	shell_run(&shellstruct);
+    osDelay(100);
+  }
+  /* USER CODE END Startshelltask */
 }
 
 /* Private application code --------------------------------------------------*/

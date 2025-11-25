@@ -1,5 +1,6 @@
-Core/Src/usart.o: ../Core/Src/usart.c ../Core/Inc/usart.h \
- ../Core/Inc/main.h ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal.h \
+Core/Src/shell.o: ../Core/Src/shell.c ../Core/Inc/shell.h \
+ ../Core/Inc/usart.h ../Core/Inc/main.h \
+ ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal.h \
  ../Core/Inc/stm32l4xx_hal_conf.h \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_rcc.h \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_def.h \
@@ -32,7 +33,6 @@ Core/Src/usart.o: ../Core/Src/usart.c ../Core/Inc/usart.h \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_tim_ex.h \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_uart.h \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_uart_ex.h \
- ../Core/Inc/shell.h ../Core/Inc/usart.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h \
  ../Core/Inc/FreeRTOSConfig.h \
@@ -50,6 +50,7 @@ Core/Src/usart.o: ../Core/Src/usart.c ../Core/Inc/usart.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/queue.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/event_groups.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/timers.h
+../Core/Inc/shell.h:
 ../Core/Inc/usart.h:
 ../Core/Inc/main.h:
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal.h:
@@ -85,8 +86,6 @@ Core/Src/usart.o: ../Core/Src/usart.c ../Core/Inc/usart.h \
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_tim_ex.h:
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_uart.h:
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_uart_ex.h:
-../Core/Inc/shell.h:
-../Core/Inc/usart.h:
 ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.h:
 ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h:
 ../Core/Inc/FreeRTOSConfig.h:

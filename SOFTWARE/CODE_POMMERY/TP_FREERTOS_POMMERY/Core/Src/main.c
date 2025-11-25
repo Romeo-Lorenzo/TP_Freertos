@@ -27,7 +27,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "shell.h"
+#include "MCP23S17.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -48,7 +49,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
+h_shell_t shellstruct;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -61,15 +62,13 @@ void MX_FREERTOS_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-
-int _write(int file, char *ptr, int len)
+int __io_putchar(int ch)
 {
-    for (int i = 0; i < len; i++)
-    {
-        HAL_UART_Transmit(&huart2, (uint8_t *)&ptr[i], 1, 100);
-    }
-    return len;
+	HAL_UART_Transmit(&huart2, (uint8_t*)&ch, 1, HAL_MAX_DELAY);
+
+	return ch;
 }
+
 
 
 /* USER CODE END 0 */
@@ -109,7 +108,21 @@ int main(void)
   MX_SPI3_Init();
   /* USER CODE BEGIN 2 */
 
-  printf("CACA");
+
+
+
+
+  printf("test123test\n\r");
+
+  MCP23S17_Init();
+
+  MCP23S17_SetPin( 3, 1);
+
+
+
+
+
+
 
   /* USER CODE END 2 */
 

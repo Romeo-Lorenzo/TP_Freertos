@@ -1,0 +1,5 @@
+../Core/Src/MCP23S17.c:17:6:MCP23S17_SetAllPinsLow	8	static
+../Core/Src/MCP23S17.c:24:6:MCP23S17_WriteRegister	24	static
+../Core/Src/MCP23S17.c:33:9:MCP23S17_ReadRegister	32	static
+../Core/Src/MCP23S17.c:48:6:MCP23S17_SetPin	24	static
+../Core/Src/MCP23S17.c:66:6:MCP23S17_Init	16	static

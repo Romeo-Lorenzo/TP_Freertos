@@ -1,0 +1,8 @@
+../Core/Src/shell.c:16:12:sh_help	2
+../Core/Src/shell.c:29:6:uart2_transmit	1
+../Core/Src/shell.c:35:6:uart2_receive	1
+../Core/Src/shell.c:41:6:shell_init	1
+../Core/Src/shell.c:62:5:shell_add	2
+../Core/Src/shell.c:77:12:shell_exec	6
+../Core/Src/shell.c:112:5:shell_run	7
+../Core/Src/shell.c:162:6:shell_uart_isr	2

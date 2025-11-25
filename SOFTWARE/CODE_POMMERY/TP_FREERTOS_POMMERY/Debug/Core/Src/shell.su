@@ -1,0 +1,8 @@
+../Core/Src/shell.c:16:12:sh_help	48	static
+../Core/Src/shell.c:29:6:uart2_transmit	16	static
+../Core/Src/shell.c:35:6:uart2_receive	16	static
+../Core/Src/shell.c:41:6:shell_init	24	static
+../Core/Src/shell.c:62:5:shell_add	24	static
+../Core/Src/shell.c:77:12:shell_exec	72	static
+../Core/Src/shell.c:112:5:shell_run	32	static
+../Core/Src/shell.c:162:6:shell_uart_isr	24	static,ignoring_inline_asm
