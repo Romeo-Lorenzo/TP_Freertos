@@ -1,4 +1,4 @@
-../Core/shell/shell.c:26:13:uart_read	1
+../Core/shell/shell.c:26:13:uart_read	2
 ../Core/shell/shell.c:34:12:uart_write	1
 ../Core/shell/shell.c:39:12:sh_help	2
 ../Core/shell/shell.c:50:6:shell_init	1

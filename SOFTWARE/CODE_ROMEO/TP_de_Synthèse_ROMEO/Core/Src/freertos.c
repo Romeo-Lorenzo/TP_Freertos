@@ -27,8 +27,7 @@
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 #include "usart.h"
-#include "shell.h"
-#include "drv_uart2.h"
+#include "shell_driver.h"
 #include "queue.h"
 #include <string.h>
 /* USER CODE END Includes */
@@ -52,6 +51,7 @@
 /* USER CODE BEGIN Variables */
 QueueHandle_t uart_rx_queue;
 uint8_t rx_char;
+shell_t debug_shell;
 /* USER CODE END Variables */
 osThreadId defaultTaskHandle;
 osThreadId shellTaskHandle;
@@ -156,72 +156,13 @@ void StartShellTask(void const * argument)
 {
 	/* USER CODE BEGIN StartShellTask */
 
-	HAL_UART_Receive_IT(&huart2, &rx_char, 1);
-
-
-	int fonction(int argc, char **argv)
-	{
-		printf("Je suis une fonction bidon\r\n");
-		return 0;
-	}
-
-	shell_init();
-	shell_add('f', fonction, "Une fonction inutile");
-
-	//	printf("\r\n=== Shell en mode interruption (FreeRTOS + IT) ===\r\n> ");
-
-	static char cmd_buffer[BUFFER_SIZE];
-	int pos = 0;
-	const char backspace[] = "\b \b";
-	const char prompt[] = "> ";
-
-	// Premier prompt
-	HAL_UART_Transmit(&huart2, (uint8_t*)prompt, strlen(prompt), 100);
+	shell_create(&debug_shell, &huart2);
+	shell_task(&debug_shell);
 
 	/* Infinite loop */
 	for(;;)
 	{
-		char c;
-		if (xQueueReceive(uart_rx_queue, &c, portMAX_DELAY) == pdPASS)
-		{
-			HAL_UART_Transmit(&huart2, (uint8_t*)&c, 1, HAL_MAX_DELAY);
-			switch(c)
-			{
-			case '\r':
-			case '\n':
-				printf("\r\n");                                     // \r\n
-				cmd_buffer[pos] = '\0';
 
-				printf(":%s\r\n", cmd_buffer);                       // Affiche la commande reçue (comme l'original)
-
-				if (pos > 0)
-				{
-					shell_exec(cmd_buffer);                         // Exécution !
-				}
-
-				printf("%s", prompt);
-				fflush(stdout);
-				pos = 0;
-				break;
-
-			case '\b':
-			case 0x7F:  // Delete
-				if (pos > 0)
-				{
-					pos--;
-					printf("%s", backspace);                        // Efface sur le terminal
-				}
-				break;
-
-			default:
-				if (pos < BUFFER_SIZE - 1 && c >= 32 && c <= 126)
-				{
-					putchar(c);                                     // Echo propre
-					cmd_buffer[pos++] = c;
-				}
-				break;
-			}
-		}
 	}
 	/* USER CODE END StartShellTask */
 }
