@@ -47,6 +47,8 @@ STM32L476RG
 <img width="684" height="491" alt="image" src="https://github.com/user-attachments/assets/4a207b2e-7af0-4c6b-9b52-8e14648cf6c9" />
 Puis on active la fonction shell_run dans une tache afin de ne pas bloquer l'acces au scheduler.
 
+<img width="406" height="651" alt="image" src="https://github.com/user-attachments/assets/8bdd0176-c412-4f4c-9c71-a99330a374fd" />
+
 
 ### 3.2 GPIO Expander et VU-Mètre
 - Configuration du bus **SPI** pour le GPIO Expander.  
