@@ -30,6 +30,7 @@
 /* USER CODE BEGIN Includes */
 #include "shell.h"
 #include "MCP23S17.h"
+#include "sgtl5000.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -50,6 +51,11 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+
+extern int16_t tri_buf[TRI_LEN];
+extern int16_t sai_buf[TRI_LEN * 2];   // *2 pour L/R
+
+uint8_t sai_send_buf[256];
 h_shell_t shellstruct;
 /* USER CODE END PV */
 
@@ -115,19 +121,28 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   __HAL_SAI_ENABLE(&hsai_BlockA2);
-
-
-
-
+  HAL_Delay(10);
 
   printf("test123test\n\r");
 
   MCP23S17_Init();
+  uint16_t sgtl_address = 0x14;
+	uint16_t data;
 
-  MCP23S17_SetPin( 3, 1);
+	h_sgtl5000_t h_sgtl5000;
+	h_sgtl5000.hi2c = &hi2c2;
+	h_sgtl5000.dev_address = sgtl_address;
 
+	sgtl5000_init(&h_sgtl5000);
+  gen_triangle();
+  build_sai_stereo_from_triangle();
+  HAL_SAI_Transmit_DMA(&hsai_BlockA2,(uint8_t *)sai_buf,TRI_LEN * 2);
 
-
+//  uint8_t result=0x00;
+//
+//  HAL_I2C_Mem_Read(&hi2c2, 0x14, 0x0000,1, &result, 1, 100);
+  //HAL_SAI_Receive_DMA(&hsai1, (uint8_t *) sai_send_buf, 256);
+  //HAL_SAI_Transmit_DMA(&hsai_BlockA2, (uint8_t *) sai_send_buf, 256);
 
 
 

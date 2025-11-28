@@ -1,0 +1,7 @@
+../Core/Src/sgtl5000.c:64:19:sgtl5000_i2c_read_register	48	static
+../Core/Src/sgtl5000.c:85:19:sgtl5000_i2c_write_register	40	static
+../Core/Src/sgtl5000.c:106:19:sgtl5000_i2c_set_bit	24	static
+../Core/Src/sgtl5000.c:122:19:sgtl5000_i2c_clear_bit	24	static
+../Core/Src/sgtl5000.c:138:19:sgtl5000_init	24	static
+../Core/Src/sgtl5000.c:284:6:gen_triangle	16	static
+../Core/Src/sgtl5000.c:303:6:build_sai_stereo_from_triangle	16	static
