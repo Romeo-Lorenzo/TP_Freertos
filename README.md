@@ -51,7 +51,11 @@ Puis on active la fonction shell_run dans une tache afin de ne pas bloquer l'acc
 
 
 ### 3.2 GPIO Expander et VU-Mètre
-- Configuration du bus **SPI** pour le GPIO Expander.  
+- Configuration du bus **SPI** pour le [GPIO Expander MCP23S17](https://github.com/Romeo-Lorenzo/TP_Freertos/blob/main/DOCS/MCP23017-Data-Sheet-DS20001952.pdf):
+  - Sur le [schématique de la carte d'interface audio](https://github.com/Romeo-Lorenzo/TP_Freertos/blob/main/DOCS/audio_iface.pdf) on retrouve que les pistes SPI du GPIO Expander sont routées sur les pins PC10, PC11, PB5 et PB7 correspondant aux bus de l'SPI3 de la STM32L476RG.
+  - Ainsi nous avons initialisé le SPI4 en Full-Duplex Master configuré comme suit:
+    <img width="492" height="398" alt="image" src="https://github.com/user-attachments/assets/d46b0fc0-4a98-441f-981c-785e45309da5" />
+
 - Test de clignotement et chenillard sur les LED.  
 - Écriture d’un **driver structuré** (`gpio_expander.c / .h`).  
 - Commande Shell pour allumer ou éteindre une LED.  
