@@ -57,7 +57,7 @@ osThreadId ShellTaskHandle;
 /* USER CODE BEGIN FunctionPrototypes */
 int fonction(h_shell_t * h_shell, int argc, char ** argv)
 {
-	int size = snprintf (h_shell->print_buffer, BUFFER_SIZE, "Je suis une fonction bidon\r\n");
+	int size = snprintf(h_shell->print_buffer, BUFFER_SIZE, "Je suis une fonction bidon\r\n");
 	h_shell->drv.transmit(h_shell->print_buffer, size);
 
 	return 0;
@@ -66,25 +66,30 @@ int fonction(h_shell_t * h_shell, int argc, char ** argv)
 
 int fonction_led(h_shell_t * h_shell, int argc, char ** argv)
 {
-	if(argc!=3){
-		int size = snprintf (h_shell->print_buffer, BUFFER_SIZE, "mauvais arg\r\n");
+	if(argc==2){
+		int lednum=atoi(argv[0]);
+		int ledstate=atoi(argv[1]);
+		MCP23S17_SetPin(lednum,ledstate );
+		int size = snprintf(h_shell->print_buffer, BUFFER_SIZE, "LED n°%d\r\n",lednum);
+		h_shell->drv.transmit(h_shell->print_buffer, size);
+	}
+	else if(argc==3){
+		int lednum=atoi(argv[0])*10+atoi(argv[1]);
+		int ledstate=atoi(argv[2]);
+		MCP23S17_SetPin(lednum,ledstate );
+		int size = snprintf(h_shell->print_buffer, BUFFER_SIZE, "LED n°%d\r\n",lednum);
+			h_shell->drv.transmit(h_shell->print_buffer, size);
+
+	}
+	else{
+		int size = snprintf(h_shell->print_buffer, BUFFER_SIZE, "mauvais arg\r\n");
 		h_shell->drv.transmit(h_shell->print_buffer, size);
 		return 0;
 	}
-	else{
-		if(*argv[2]){
-			MCP23S17_SetPin( *argv[1]&0xFF, 0 );
-			int size = snprintf (h_shell->print_buffer, BUFFER_SIZE, "LED n°%d\r\n",*argv[1]&0xFF);
-			h_shell->drv.transmit(h_shell->print_buffer, size);
-		}
-		else{
-
-		}
-	}
 
 
 
-	return 0;
+	return 1;
 }
 
 /* USER CODE END FunctionPrototypes */

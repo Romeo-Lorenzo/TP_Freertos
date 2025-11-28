@@ -19,8 +19,9 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "usart.h"
-#include "shell.h"
+
 /* USER CODE BEGIN 0 */
+#include "shell.h"
 
 #include "cmsis_os.h"
 extern h_shell_t shellstruct;
