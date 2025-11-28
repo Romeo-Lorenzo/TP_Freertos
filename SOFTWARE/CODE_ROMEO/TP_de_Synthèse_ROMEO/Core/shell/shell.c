@@ -24,11 +24,11 @@ static shell_func_t shell_func_list[SHELL_FUNC_LIST_MAX_SIZE];
 char print_buffer[BUFFER_SIZE];
 
 static char uart_read() {
-	char c;
-
-	HAL_UART_Receive(&UART_DEVICE, (uint8_t*)(&c), 1, HAL_MAX_DELAY);
-
-	return c;
+	uint8_t ch;
+	if (HAL_UART_Receive(&huart2, &ch, 1, 10) == HAL_OK) {  // 10 ms timeout
+		return ch;
+	}
+	return 0;   // 0 = rien reçu → shell_run ignore
 }
 
 static int uart_write(char * s, uint16_t size) {

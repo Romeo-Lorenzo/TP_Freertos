@@ -6,15 +6,18 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
 ../Core/shell/drv_uart2.c \
-../Core/shell/shell.c 
+../Core/shell/shell.c \
+../Core/shell/shell_driver.c 
 
 OBJS += \
 ./Core/shell/drv_uart2.o \
-./Core/shell/shell.o 
+./Core/shell/shell.o \
+./Core/shell/shell_driver.o 
 
 C_DEPS += \
 ./Core/shell/drv_uart2.d \
-./Core/shell/shell.d 
+./Core/shell/shell.d \
+./Core/shell/shell_driver.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
@@ -24,7 +27,7 @@ Core/shell/%.o Core/shell/%.su Core/shell/%.cyclo: ../Core/shell/%.c Core/shell/
 clean: clean-Core-2f-shell
 
 clean-Core-2f-shell:
-	-$(RM) ./Core/shell/drv_uart2.cyclo ./Core/shell/drv_uart2.d ./Core/shell/drv_uart2.o ./Core/shell/drv_uart2.su ./Core/shell/shell.cyclo ./Core/shell/shell.d ./Core/shell/shell.o ./Core/shell/shell.su
+	-$(RM) ./Core/shell/drv_uart2.cyclo ./Core/shell/drv_uart2.d ./Core/shell/drv_uart2.o ./Core/shell/drv_uart2.su ./Core/shell/shell.cyclo ./Core/shell/shell.d ./Core/shell/shell.o ./Core/shell/shell.su ./Core/shell/shell_driver.cyclo ./Core/shell/shell_driver.d ./Core/shell/shell_driver.o ./Core/shell/shell_driver.su
 
 .PHONY: clean-Core-2f-shell
 
