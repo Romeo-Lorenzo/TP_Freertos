@@ -70,7 +70,12 @@ Puis on active la fonction shell_run dans une tache afin de ne pas bloquer l'acc
   ```c
   __HAL_SAI_ENABLE(&hsai_BlockA2);
   ```
-- Lecture du registre **CHIP_ID** (0x0000, adresse I2C = 0x14).  
+- Lecture du registre **CHIP_ID** (0x0000, adresse I2C = 0x14).
+  <img width="626" height="201" alt="image" src="https://github.com/user-attachments/assets/e6361832-2fad-4104-8646-50151e927062" />
+
+  <img width="620" height="28" alt="image" src="https://github.com/user-attachments/assets/b07dbc6b-f77d-4603-8c10-2fc7d1860571" />
+
+
 - Écriture des registres de configuration dans `sgtl5000.c`.  
 - Vérification des signaux I2S à l’oscilloscope.  
 - Implémentation :
