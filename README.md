@@ -92,7 +92,10 @@ Puis on active la fonction shell_run dans une tache afin de ne pas bloquer l'acc
 ### 3.5 Effet audio
 - Réalisation d’un effet simple au choix (ex. tremolo, distorsion, delay…).  
 - Application de l’effet dans la chaîne de traitement audio.
+  
+```c
 
+```
 ---
 
 ## 4. Organisation du projet
@@ -123,7 +126,8 @@ En cas de doute, demander validation avant de modifier le matériel ou le code.
 
 ## 6. Auteurs
 
-- *À compléter*
+- Mathieu POMMERY
+- Lorenzo ROMEO
 
 ---
 
