@@ -153,7 +153,9 @@ Il suffit donc d'inporter les fichiers shell.h et shell.c et de mettre en place 
 - Visualisation du volume audio sur les LED.
 
 ### 3.3 CODEC Audio SGTL5000
-- Configuration de l’I2C pour la configuration du CODEC.  
+- Configuration de l’I2C pour la configuration du CODEC:
+  	Le CODEC est relié à l'I2C sortant des pins PB10/PB11 du STM32 (cf. [schématique](https://github.com/Romeo-Lorenzo/TP_Freertos/blob/main/DOCS/audio_iface.pdf). Soit l'I2C2 du STM32L476RG.
+  
 - Configuration du SAI2 (I2S) :
   - Bloc A : Master avec MCLK  
   - Bloc B : Slave synchrone  
