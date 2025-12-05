@@ -206,8 +206,8 @@ HAL_StatusTypeDef sgtl5000_init(h_sgtl5000_t * h_sgtl5000)
 
 	// Enable Zero-cross detect if needed for HP_OUT (bit 5) and ADC (bit 1)
 	// Write CHIP_ANA_CTRL 0x0133
-	mask = 0x0004;	// Unmute all + SELECT_ADC = LINEIN
-//	mask = 0x0000;	// Unmute all + SELECT_ADC = MIC
+//	mask = 0x0004;	// Unmute all + SELECT_ADC = LINEIN
+	mask = 0x0000;	// Unmute all + SELECT_ADC = MIC
 	sgtl5000_i2c_write_register(h_sgtl5000, SGTL5000_CHIP_ANA_CTRL, mask);
 
 	//------------Power up Inputs/Outputs/Digital Blocks---------

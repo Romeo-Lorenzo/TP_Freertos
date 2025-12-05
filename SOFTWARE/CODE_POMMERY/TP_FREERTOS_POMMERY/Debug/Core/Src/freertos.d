@@ -50,7 +50,7 @@ Core/Src/freertos.o: ../Core/Src/freertos.c \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/event_groups.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/timers.h \
  ../Core/Inc/shell.h ../Core/Inc/usart.h ../Core/Inc/main.h \
- ../Core/Inc/MCP23S17.h
+ ../Core/Inc/MCP23S17.h ../Core/Inc/sgtl5000.h
 ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h:
 ../Core/Inc/FreeRTOSConfig.h:
 ../Middlewares/Third_Party/FreeRTOS/Source/include/projdefs.h:
@@ -106,3 +106,4 @@ Core/Src/freertos.o: ../Core/Src/freertos.c \
 ../Core/Inc/usart.h:
 ../Core/Inc/main.h:
 ../Core/Inc/MCP23S17.h:
+../Core/Inc/sgtl5000.h:

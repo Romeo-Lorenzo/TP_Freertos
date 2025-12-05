@@ -10,6 +10,10 @@ extern I2C_HandleTypeDef hi2c2;
 #define TRI_LEN        (AUDIO_FS / TRI_FREQ)   // doit être pair !
 #define TRI_AMP        30000
 
+#define AUDIO_BUF_BYTES   32
+#define AUDIO_HALF_BYTES  (AUDIO_BUF_BYTES / 2)
+
+
 
 typedef enum sgtl5000_registers_enum
 {

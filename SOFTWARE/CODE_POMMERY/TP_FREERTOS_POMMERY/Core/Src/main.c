@@ -55,6 +55,12 @@
 extern int16_t tri_buf[TRI_LEN];
 extern int16_t sai_buf[TRI_LEN * 2];   // *2 pour L/R
 
+uint8_t i2s_rx_buf[AUDIO_BUF_BYTES];
+uint8_t i2s_tx_buf[AUDIO_BUF_BYTES];
+
+volatile uint8_t rx_half_flag = 0;
+volatile uint8_t rx_full_flag = 0;
+
 uint8_t sai_send_buf[256];
 h_shell_t shellstruct;
 /* USER CODE END PV */
@@ -75,6 +81,22 @@ int __io_putchar(int ch)
 	HAL_UART_Transmit(&huart2, (uint8_t*)&ch, 1, HAL_MAX_DELAY);
 
 	return ch;
+}
+
+void HAL_SAI_RxHalfCpltCallback(SAI_HandleTypeDef *hsai)
+{
+    if (hsai == &hsai_BlockB2)
+    {
+        rx_half_flag = 1;
+    }
+}
+
+void HAL_SAI_RxCpltCallback(SAI_HandleTypeDef *hsai)
+{
+    if (hsai == &hsai_BlockB2)
+    {
+        rx_full_flag = 1;
+    }
 }
 
 
@@ -121,30 +143,25 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   __HAL_SAI_ENABLE(&hsai_BlockA2);
+  __HAL_SAI_ENABLE(&hsai_BlockB2);
   HAL_Delay(10);
 
   printf("test123test\n\r");
 
   MCP23S17_Init();
   uint16_t sgtl_address = 0x14;
-	uint16_t data;
-
-	h_sgtl5000_t h_sgtl5000;
-	h_sgtl5000.hi2c = &hi2c2;
-	h_sgtl5000.dev_address = sgtl_address;
+  uint16_t data;
+  h_sgtl5000_t h_sgtl5000;
+  h_sgtl5000.hi2c = &hi2c2;
+  h_sgtl5000.dev_address = sgtl_address;
 
 	sgtl5000_init(&h_sgtl5000);
-  gen_triangle();
-  build_sai_stereo_from_triangle();
-  HAL_SAI_Transmit_DMA(&hsai_BlockA2,(uint8_t *)sai_buf,TRI_LEN * 2);
 
-//  uint8_t result=0x00;
-//
-//  HAL_I2C_Mem_Read(&hi2c2, 0x14, 0x0000,1, &result, 1, 100);
-  //HAL_SAI_Receive_DMA(&hsai1, (uint8_t *) sai_send_buf, 256);
-  //HAL_SAI_Transmit_DMA(&hsai_BlockA2, (uint8_t *) sai_send_buf, 256);
-
-
+    memset(i2s_rx_buf, 0, sizeof(i2s_rx_buf));
+    memset(i2s_tx_buf, 0, sizeof(i2s_tx_buf));
+  //gen_triangle();
+  //build_sai_stereo_from_triangle();
+  //HAL_SAI_Transmit_DMA(&hsai_BlockA2,(uint8_t *)sai_buf,TRI_LEN * 2);
 
 
   /* USER CODE END 2 */
