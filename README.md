@@ -148,7 +148,75 @@ Il suffit donc d'inporter les fichiers shell.h et shell.c et de mettre en place 
     <img width="492" height="398" alt="image" src="https://github.com/user-attachments/assets/d46b0fc0-4a98-441f-981c-785e45309da5" />
 
 - Test de clignotement et chenillard sur les LED.  
-- Écriture d’un **driver structuré** (`gpio_expander.c / .h`).  
+- Écriture du driver du GPIO extender (`MCP25S17.c / .h`):
+ ```c
+// Initialize MCP23S17 - turns off all LEDs
+void MCP23S17_SetAllPinsLow(void) {
+	MCP23S17_WriteRegister(MCP23S17_GPIOA, 0x0); // Set all GPIOA high
+	MCP23S17_WriteRegister(MCP23S17_GPIOB, 0x0); // Set all GPIOB high
+}
+
+// Write to a register
+void MCP23S17_WriteRegister(uint8_t reg, uint8_t value) {
+	uint8_t txData[3] = {MCP23S17_WRITE, reg, value};
+	HAL_GPIO_WritePin(MCP_CS_GPIO_PORT, MCP_CS_PIN, GPIO_PIN_RESET);
+	HAL_SPI_Transmit(&hspi3, txData, 3, HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(MCP_CS_GPIO_PORT, MCP_CS_PIN, GPIO_PIN_SET);
+}
+
+// Read from a register
+uint8_t MCP23S17_ReadRegister(uint8_t reg) {
+	uint8_t txData[3] = {MCP23S17_READ, reg, 0x00};
+	uint8_t rxData[3];
+	
+	HAL_GPIO_WritePin(MCP_CS_GPIO_PORT, MCP_CS_PIN, GPIO_PIN_RESET);
+	HAL_SPI_TransmitReceive(&hspi3, txData, rxData, 3, HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(MCP_CS_GPIO_PORT, MCP_CS_PIN, GPIO_PIN_SET);
+	
+	return rxData[2];
+}
+
+// Set pins
+void MCP23S17_SetPin( uint8_t pin, uint8_t state) {
+	if (pin > 15) return;
+
+	uint8_t reg = (pin < 8) ? MCP23S17_GPIOA : MCP23S17_GPIOB;
+	uint8_t bit = (pin < 8) ? pin : (pin - 8);
+
+	uint8_t current = 0;
+	// Lire l'état actuel
+	current=MCP23S17_ReadRegister(reg);
+
+	if (state)
+		current = ~(1 << bit); //set the bit at position bit to 0
+	else
+		current = 0xFF; //set all bits to 1
+	MCP23S17_WriteRegister(reg, current);
+}
+
+void MCP23S17_Init(void){
+	// Set CS high initially
+	HAL_GPIO_WritePin(MCP_CS_GPIO_PORT, MCP_CS_PIN, GPIO_PIN_SET);
+
+	// Mandatory
+	HAL_GPIO_WritePin(MCP_RESET_GPIO_PORT, MCP_RESET_PIN, GPIO_PIN_RESET);
+	HAL_Delay(1);
+	HAL_GPIO_WritePin(MCP_RESET_GPIO_PORT, MCP_RESET_PIN, GPIO_PIN_SET);
+	HAL_Delay(1);
+
+	// Configure IOCON
+	MCP23S17_WriteRegister(MCP23S17_IOCONA, 0x20); // BANK=0, SEQOP=0, etc.
+
+	// Set all pins as outputs
+	MCP23S17_WriteRegister(MCP23S17_IODIRA, 0x00); // All GPIOA outputs
+	MCP23S17_WriteRegister(MCP23S17_IODIRB, 0x00); // All GPIOB outputs
+
+	for(int i=0; i<16;i++){
+		MCP23S17_SetPin(i, 0);
+	}
+}
+```
+
 - Commande Shell pour allumer ou éteindre une LED.  
 - Visualisation du volume audio sur les LED.
 
@@ -172,7 +240,7 @@ Il suffit donc d'inporter les fichiers shell.h et shell.c et de mettre en place 
 - Écriture des registres de configuration dans `sgtl5000.c`.  
 - Vérification des signaux I2S à l’oscilloscope.  
 - Implémentation :
-  - Génération d’un signal triangulaire,  
+  - Génération d’un signal triangulaire: Validé par le professeur.
   - Bypass numérique (ADC → DAC).
 
 ### 3.4 Filtre RC
