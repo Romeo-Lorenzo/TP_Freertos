@@ -17,7 +17,7 @@
 void MCP23S17_SetAllPinsLow(void) {
 MCP23S17_WriteRegister(MCP23S17_GPIOA, 0x0); // Set all GPIOA high
 MCP23S17_WriteRegister(MCP23S17_GPIOB, 0x0); // Set all GPIOB high
-// Alternatively, use OLAT if needed: MCP23S17_WriteRegister(MCP23S17_OLATA, 0xFF);
+
 }
 
 // Write to a register
@@ -45,20 +45,23 @@ return rxData[2];
 
 
 
-void MCP23S17_SetPin( uint8_t pin, uint8_t state) {
+void MCP23S17_SetPin(uint8_t pin, uint8_t state)
+{
     if (pin > 15) return;
 
     uint8_t reg = (pin < 8) ? MCP23S17_GPIOA : MCP23S17_GPIOB;
     uint8_t bit = (pin < 8) ? pin : (pin - 8);
 
-    uint8_t current = 0;
-    // Lire l'état actuel
-    current=MCP23S17_ReadRegister(reg);
+    // Lire l'état actuel du port
+    uint8_t current = MCP23S17_ReadRegister(reg);
 
-    if (state)
-        current = ~(1 << bit);
-    else
-        current = 0xFF;
+    if (state) {
+        // mettre le bit à 1
+        current |= (1u << bit);
+    } else {
+        // mettre le bit à 0
+        current &= ~(1u << bit);
+    }
 
     MCP23S17_WriteRegister(reg, current);
 }

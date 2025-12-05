@@ -52,8 +52,8 @@ QueueHandle_t uartRxQueue;
 
 
 
-extern uint8_t i2s_rx_buf[AUDIO_BUF_BYTES];
-extern uint8_t i2s_tx_buf[AUDIO_BUF_BYTES];
+extern int16_t i2s_rx_buf[AUDIO_BUF_BYTES];
+extern int16_t i2s_tx_buf[AUDIO_BUF_BYTES];
 
 extern volatile uint8_t rx_half_flag;
 extern volatile uint8_t rx_full_flag;
@@ -193,8 +193,7 @@ void StartDefaultTask(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-
-
+	  VU_UpdateFromBuffer((int16_t *)i2s_rx_buf,AUDIO_BUF_BYTES);
 	HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_5);
     osDelay(100);
   }
@@ -211,9 +210,9 @@ void StartDefaultTask(void const * argument)
 void StartTask02(void const * argument)
 {
   /* USER CODE BEGIN StartTask02 */
-    HAL_SAI_Receive_DMA(&hsai_BlockB2,i2s_rx_buf,AUDIO_BUF_BYTES / 2);
+    HAL_SAI_Receive_DMA(&hsai_BlockB2,(int16_t *)i2s_rx_buf,AUDIO_BUF_BYTES);
 
-    HAL_SAI_Transmit_DMA(&hsai_BlockA2,i2s_tx_buf,AUDIO_BUF_BYTES / 2);
+    HAL_SAI_Transmit_DMA(&hsai_BlockA2,(int16_t *)i2s_tx_buf,AUDIO_BUF_BYTES);
   /* Infinite loop */
   for(;;)
   {
@@ -223,15 +222,18 @@ void StartTask02(void const * argument)
 	        if (rx_half_flag)
 	        {
 	            rx_half_flag = 0;
-	            memcpy(&i2s_tx_buf[0],&i2s_rx_buf[0],AUDIO_HALF_BYTES);
+	            for(int i=0;i<AUDIO_HALF_BYTES;i++){
+	            	i2s_tx_buf[i]=i2s_rx_buf[i];
+	            }
 	        }
 	        if (rx_full_flag)
 	        {
 	            rx_full_flag = 0;
-	            memcpy(&i2s_tx_buf[AUDIO_HALF_BYTES],&i2s_rx_buf[AUDIO_HALF_BYTES],AUDIO_HALF_BYTES);
-	        }
+	            for(int i=0;i<AUDIO_HALF_BYTES;i++){
+	            	i2s_tx_buf[i+AUDIO_HALF_BYTES]=i2s_rx_buf[i+AUDIO_HALF_BYTES];
 
-    osDelay(1);
+	            }
+	        }
   }
   /* USER CODE END StartTask02 */
 }

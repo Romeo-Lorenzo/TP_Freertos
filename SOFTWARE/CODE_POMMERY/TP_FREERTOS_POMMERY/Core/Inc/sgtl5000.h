@@ -10,8 +10,10 @@ extern I2C_HandleTypeDef hi2c2;
 #define TRI_LEN        (AUDIO_FS / TRI_FREQ)   // doit être pair !
 #define TRI_AMP        30000
 
-#define AUDIO_BUF_BYTES   32
+#define AUDIO_BUF_BYTES   64
 #define AUDIO_HALF_BYTES  (AUDIO_BUF_BYTES / 2)
+
+#define VU_NUM_LEDS   16
 
 
 
@@ -82,6 +84,8 @@ HAL_StatusTypeDef sgtl5000_i2c_set_bit(h_sgtl5000_t * h_sgtl5000, sgtl5000_regis
 HAL_StatusTypeDef sgtl5000_i2c_clear_bit(h_sgtl5000_t * h_sgtl5000, sgtl5000_registers_t reg_address, uint16_t clear_mask);
 
 HAL_StatusTypeDef sgtl5000_init(h_sgtl5000_t * h_sgtl5000);
+
+void VU_UpdateFromBuffer(int16_t *buf, uint32_t len);
 
 
 
