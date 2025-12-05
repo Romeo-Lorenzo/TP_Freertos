@@ -217,7 +217,37 @@ void MCP23S17_Init(void){
 }
 ```
 
-- Commande Shell pour allumer ou éteindre une LED.  
+- Commande Shell pour allumer ou éteindre une LED:
+```c
+int fonction_led(h_shell_t * h_shell, int argc, char ** argv)
+{
+	if(argc==2){
+		int lednum=atoi(argv[0]);
+		int ledstate=atoi(argv[1]);
+		MCP23S17_SetPin(lednum,ledstate );
+		int size = snprintf(h_shell->print_buffer, BUFFER_SIZE, "LED n°%d\r\n",lednum);
+		h_shell->drv.transmit(h_shell->print_buffer, size);
+	}
+	else if(argc==3){
+		int lednum=atoi(argv[0])*10+atoi(argv[1]);
+		int ledstate=atoi(argv[2]);
+		MCP23S17_SetPin(lednum,ledstate );
+		int size = snprintf(h_shell->print_buffer, BUFFER_SIZE, "LED n°%d\r\n",lednum);
+			h_shell->drv.transmit(h_shell->print_buffer, size);
+	}
+	else{
+		int size = snprintf(h_shell->print_buffer, BUFFER_SIZE, "mauvais arg\r\n");
+		h_shell->drv.transmit(h_shell->print_buffer, size);
+		return 0;
+	}
+```
+
+- ajout de la fonction:
+	
+```c
+shell_add(&shellstruct, 'l', fonction_led, "control des led");
+
+```
 - Visualisation du volume audio sur les LED.
 
 ### 3.3 CODEC Audio SGTL5000
