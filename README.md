@@ -149,6 +149,9 @@ Il suffit donc d'inporter les fichiers shell.h et shell.c et de mettre en place 
 
 - Test de clignotement et chenillard sur les LED.  
 - Écriture du driver du GPIO extender (`MCP25S17.c / .h`):
+
+<img width="300" height="300" alt="image" src="https://github.com/user-attachments/assets/4651cf97-aa15-4b2f-8a51-75afdee23a64" />
+
  ```c
 // Initialize MCP23S17 - turns off all LEDs
 void MCP23S17_SetAllPinsLow(void) {
