@@ -270,11 +270,84 @@ shell_add(&shellstruct, 'l', fonction_led, "control des led");
   <img width="620" height="28" alt="image" src="https://github.com/user-attachments/assets/b07dbc6b-f77d-4603-8c10-2fc7d1860571" />
 
 
-- Écriture des registres de configuration dans `sgtl5000.c`.  
+- Écriture des registres de configuration dans `sgtl5000.c`.
+```c
+HAL_StatusTypeDef sgtl5000_i2c_write_register(h_sgtl5000_t * h_sgtl5000, sgtl5000_registers_t reg_address, uint16_t data)
+{
+	HAL_StatusTypeDef ret;
+	uint8_t buffer[2];
+	buffer[0] = (data >> 8) & 0xFF;
+	buffer[1] = data & 0xFF;
+	ret = HAL_I2C_Mem_Write(
+			h_sgtl5000->hi2c,
+			h_sgtl5000->dev_address,
+			reg_address,
+			I2C_MEMADD_SIZE_16BIT,
+			buffer,
+			2,
+			HAL_MAX_DELAY		// WTF
+	);
+	return ret;
+}
+```
 - Vérification des signaux I2S à l’oscilloscope.  
 - Implémentation :
   - Génération d’un signal triangulaire: Validé par le professeur.
+```c
+void gen_triangle(void)
+{
+    int32_t step;
+    uint32_t i;
+
+    // montée de -A à +A sur TRI_LEN/2
+    step = (2 * (int32_t)TRI_AMP) / ((TRI_LEN / 2) - 1);
+
+    for (i = 0; i < TRI_LEN / 2; i++) {
+        tri_buf[i] = (int16_t)(-TRI_AMP + step * (int32_t)i);
+    }
+
+    // descente de +A à -A sur TRI_LEN/2
+    for (i = TRI_LEN / 2; i < TRI_LEN; i++) {
+        tri_buf[i] = (int16_t)(TRI_AMP - step * (int32_t)(i - TRI_LEN / 2));
+    }
+}
+```
+
+```c
+void build_sai_stereo_from_triangle(void)
+{
+    for (uint32_t i = 0; i < TRI_LEN; i++) {
+        int16_t s = tri_buf[i];
+        sai_buf[2 * i + 0] = s; // Left
+        sai_buf[2 * i + 1] = s; // Right (même signal pour test)
+    }
+}
+```
+
   - Bypass numérique (ADC → DAC).
+
+```c
+void StartTask02(void const * argument)
+{
+    HAL_SAI_Receive_DMA(&hsai_BlockB2,i2s_rx_buf,AUDIO_BUF_BYTES / 2);
+    HAL_SAI_Transmit_DMA(&hsai_BlockA2,i2s_tx_buf,AUDIO_BUF_BYTES / 2);
+  for(;;)
+  {
+	        if (rx_half_flag)
+	        {
+	            rx_half_flag = 0;
+	            memcpy(&i2s_tx_buf[0],&i2s_rx_buf[0],AUDIO_HALF_BYTES);
+	        }
+	        if (rx_full_flag)
+	        {
+	            rx_full_flag = 0;
+	            memcpy(&i2s_tx_buf[AUDIO_HALF_BYTES],&i2s_rx_buf[AUDIO_HALF_BYTES],AUDIO_HALF_BYTES);
+	        }
+
+    osDelay(1);
+  }
+}
+```
 
 ### 3.4 Filtre RC
 - Implémentation dans `RCFilter.c / RCFilter.h`.  
