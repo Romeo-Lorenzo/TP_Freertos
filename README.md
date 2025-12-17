@@ -301,6 +301,14 @@ Nous passons maintenant à la puce audio principale, qui contient un adc qui gè
   ```
 
   Remarque, il est important d'activer cette horloge avant toute configuration en i2c du sgtl car c'est grace à cette horloge qu'il cadence aussi ses bloc logique interne donc l'i2c ne répondra pas sans la présence de cette horloge externe.
+
+  ![20251128_143331 (1)](https://github.com/user-attachments/assets/ed851e04-c306-402a-8596-3785f639a5b1)
+
+  On peut voir à l'oscilloscope le signal d'horloge qui est un signal d'horloge non retouché( en dehors des PLL) donc pas de beau carré ici, sa fréquence est de 12.195Mhz ce qui correspond à 256 fois la fréquence d'echantillonage qui est de 48kHz, ce qui est cohérent.
+
+  
+
+
   
 - Lecture du registre **CHIP_ID** (0x0000, adresse I2C = 0x14).
   <img width="626" height="201" alt="image" src="https://github.com/user-attachments/assets/e6361832-2fad-4104-8646-50151e927062" />
@@ -334,7 +342,14 @@ Voici donc notre fonction racine, que nous utilisons pour toute écriture de reg
 
 
 - Vérification des signaux I2S à l’oscilloscope.
- 
+
+  
+ ![20251128_163624](https://github.com/user-attachments/assets/56ec98fa-472d-4db2-bc38-5a7df8045cc7)
+
+
+On observe donc ici le frame clock, nos frame font 16bit donc un échantillons, on remarque qu'elles sont parfaitement cloquée à 48kHz ce qui est coérent, les signaux i2s sont des signaux numérique 3.3V, on aurait pu afficher le dataout en même temps bien que peu représentatif.
+
+
   
   - Génération d’un signal triangulaire: Validé par le professeur.
 ```c
@@ -371,6 +386,9 @@ void build_sai_stereo_from_triangle(void)
 Pour ce qui est de la génération du signal triangulaire, on rempli un buffer d'entier signé sur 16bit avec un signal triangulaire, d'une amplitude max et d'une période donnée alors on lance le sai_transmit dma qui est configuré en circulaire ainsi le dma va prend une à une les valeurs dans le buffer de manière circulaire et les envoyer dans le bloc amplificateur du sgtl5000.
 
 
+Le signal triangulaire à été validé par le professeur sur l'oscilloscope.
+
+
 
   - Bypass numérique (ADC → DAC).
 
@@ -399,27 +417,48 @@ void StartTask02(void const * argument)
 
 Ce bloc est encore plus simple, ici on fait un bypass numérique, les samples arrivé du bloc adc du sgtl5000 par i2s sont directement renvoyé par i2s au bloc amplificateur, remarque le code précédent ne marchait pas bien car le memcpy est trop long, il vaut mieu faire une copy à la main du buffer dans la callback de dma avec une boucle for.
 
+```c
+void StartTask02(void const * argument)
+{
+  /* USER CODE BEGIN StartTask02 */
+    HAL_SAI_Receive_DMA(&hsai_BlockB2,(int16_t *)i2s_rx_buf,AUDIO_BUF_BYTES);
+
+    HAL_SAI_Transmit_DMA(&hsai_BlockA2,(int16_t *)i2s_tx_buf,AUDIO_BUF_BYTES);
+  /* Infinite loop */
+  for(;;)
+  {
+
+
+
+	        if (rx_half_flag)
+	        {
+	            rx_half_flag = 0;
+	            for(int i=0;i<AUDIO_HALF_BYTES;i++){
+	            	i2s_tx_buf[i]=i2s_rx_buf[i];
+	            }
+	        }
+	        if (rx_full_flag)
+	        {
+	            rx_full_flag = 0;
+	            for(int i=0;i<AUDIO_HALF_BYTES;i++){
+	            	i2s_tx_buf[i+AUDIO_HALF_BYTES]=i2s_rx_buf[i+AUDIO_HALF_BYTES];
+
+	            }
+	        }
+  }
+  /* USER CODE END StartTask02 */
+}
+```
+
+Ci-dessus notre tache freertos utilisé pour le bypass numérique sans utiliser memcpy, le résultat est bien meilleure.
+
 
 
 ### 3.4 Filtre RC
-Nous implémentons alors un filtrage passe bas sur notre buffer, pour cela nous allons calculer ses coefficients  
+Nous implémentons alors un filtrage passe bas sur notre buffer,afin d'améliorer la qualitée sonore.
 
-- Implémentation dans `RCFilter.c / RCFilter.h`.  
-- Structure :
-  ```c
-  typedef struct {
-      uint32_t coeff_A;
-      uint32_t coeff_B;
-      uint32_t coeff_D;
-      uint16_t out_prev;
-  } h_RC_filter_t;
-  ```
-- Fonctions :
-  ```c
-  void RC_filter_init(h_RC_filter_t *h, uint16_t fc, uint16_t fs);
-  uint16_t RC_filter_update(h_RC_filter_t *h, uint16_t input);
-  ```
-- Commande Shell pour ajuster la fréquence de coupure.
+
+
 
 ### 3.5 Effet audio
 - Réalisation d’un effet simple au choix (ex. tremolo, distorsion, delay…).  
