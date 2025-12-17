@@ -104,8 +104,9 @@ void shell_uart_isr(h_shell_t * h_shell){
 	portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 ```
-On fait fonctionner le shell en interruption en déclenchant une interruption par caractère reçu et en les transférant à l'aide d'une queue.
+ Notre nouveau shell se base sur une reception caractère par caractère en intérruption, chaque caractère est ensuite chargé dans une queu, la fonction de mise à jour du shell s'execute dans une tache freertos, elle recois les caractère par l'intermediaire de cette queue, cela nous permet de faire fonctionner le shell sans aucune attente bloquante pour les autres taches, ce qui est nécéssaire pour de l'audio.
 
+ 
 <img width="419" height="342" alt="image" src="https://github.com/user-attachments/assets/80d0b630-aad8-4a9f-ab38-328fe7928c0b" />
 
 Fonctionnement du shell endans une tache interruption validé.
@@ -145,6 +146,7 @@ Il suffit donc d'inporter les fichiers shell.h et shell.c et de mettre en place 
 - Configuration du bus **SPI** pour le [GPIO Expander MCP23S17](https://github.com/Romeo-Lorenzo/TP_Freertos/blob/main/DOCS/MCP23017-Data-Sheet-DS20001952.pdf):
   - Sur le [schématique de la carte d'interface audio](https://github.com/Romeo-Lorenzo/TP_Freertos/blob/main/DOCS/audio_iface.pdf) on retrouve que les pistes SPI du GPIO Expander sont routées sur les pins PC10, PC11, PB5 et PB7 correspondant aux bus de l'SPI3 de la STM32L476RG.
   - Ainsi nous avons initialisé le SPI4 en Full-Duplex Master configuré comme suit:
+    
     <img width="492" height="398" alt="image" src="https://github.com/user-attachments/assets/d46b0fc0-4a98-441f-981c-785e45309da5" />
 
 - Test de clignotement et chenillard sur les LED.  
@@ -221,6 +223,7 @@ void MCP23S17_Init(void){
 ```
 
 - Commande Shell pour allumer ou éteindre une LED:
+  
 ```c
 int fonction_led(h_shell_t * h_shell, int argc, char ** argv)
 {
@@ -251,11 +254,43 @@ int fonction_led(h_shell_t * h_shell, int argc, char ** argv)
 shell_add(&shellstruct, 'l', fonction_led, "control des led");
 
 ```
-- Visualisation du volume audio sur les LED.
+Nous obtenons donc une maniere de visualiser le volume audio sur des barres de led, par ailleurs nous avons légèrement modifié le code précédent afin que lorsque l'on veuille allumer une led, cela garde l'état des led précédentes, de plus on recopie l'état des led 1 à 8 sur les leds 9 à 16 ainsi les deux barres évoluerons en même temps et de manière équivalente:
+
+```c
+
+void MCP23S17_SetPin(uint8_t pin, uint8_t state)
+{
+    if (pin > 15) return;
+
+    uint8_t reg = (pin < 8) ? MCP23S17_GPIOA : MCP23S17_GPIOB;
+    uint8_t bit = (pin < 8) ? pin : (pin - 8);
+
+    // Lire l'état actuel du port
+    uint8_t current = MCP23S17_ReadRegister(reg);
+
+    if (state) {
+        // mettre le bit à 1
+        current |= (1u << bit);
+    } else {
+        // mettre le bit à 0
+        current &= ~(1u << bit);
+    }
+
+    MCP23S17_WriteRegister(reg, current);
+}
+
+```
+
+Le changement principal est qu'ici on écrase pas l'état précédent mais on change précisément le bit voulu sans toucher aux autres avec un masque.
 
 ### 3.3 CODEC Audio SGTL5000
+
+Nous passons maintenant à la puce audio principale, qui contient un adc qui gère le microphone sur la carte d'extension, cette adc par la suite sors ses echantillons en i2s, elle possède aussi un préampli qui prends lui ses échantillons en I2S, nous allons voir sa mise en route: 
+
+
 - Configuration de l’I2C pour la configuration du CODEC:
   	Le CODEC est relié à l'I2C sortant des pins PB10/PB11 du STM32 (cf. [schématique](https://github.com/Romeo-Lorenzo/TP_Freertos/blob/main/DOCS/audio_iface.pdf). Soit l'I2C2 du STM32L476RG.
+  
   
 - Configuration du SAI2 (I2S) :
   - Bloc A : Master avec MCLK  
@@ -264,11 +299,15 @@ shell_add(&shellstruct, 'l', fonction_led, "control des led");
   ```c
   __HAL_SAI_ENABLE(&hsai_BlockA2);
   ```
+
+  Remarque, il est important d'activer cette horloge avant toute configuration en i2c du sgtl car c'est grace à cette horloge qu'il cadence aussi ses bloc logique interne donc l'i2c ne répondra pas sans la présence de cette horloge externe.
+  
 - Lecture du registre **CHIP_ID** (0x0000, adresse I2C = 0x14).
   <img width="626" height="201" alt="image" src="https://github.com/user-attachments/assets/e6361832-2fad-4104-8646-50151e927062" />
 
   <img width="620" height="28" alt="image" src="https://github.com/user-attachments/assets/b07dbc6b-f77d-4603-8c10-2fc7d1860571" />
 
+On lit rapidement le registre chip id qui nous retourne 0xA0, ce qui est bon la puce fonctionne donc bien.
 
 - Écriture des registres de configuration dans `sgtl5000.c`.
 ```c
@@ -290,8 +329,13 @@ HAL_StatusTypeDef sgtl5000_i2c_write_register(h_sgtl5000_t * h_sgtl5000, sgtl500
 	return ret;
 }
 ```
-- Vérification des signaux I2S à l’oscilloscope.  
-- Implémentation :
+
+Voici donc notre fonction racine, que nous utilisons pour toute écriture de registre afin de configurer, pour ce qui est des valeurs que nous écrivons dans ces registres, se referer au fichier sgtl5000.h et sgtl5000.c dans le projet.
+
+
+- Vérification des signaux I2S à l’oscilloscope.
+ 
+  
   - Génération d’un signal triangulaire: Validé par le professeur.
 ```c
 void gen_triangle(void)
@@ -324,6 +368,10 @@ void build_sai_stereo_from_triangle(void)
 }
 ```
 
+Pour ce qui est de la génération du signal triangulaire, on rempli un buffer d'entier signé sur 16bit avec un signal triangulaire, d'une amplitude max et d'une période donnée alors on lance le sai_transmit dma qui est configuré en circulaire ainsi le dma va prend une à une les valeurs dans le buffer de manière circulaire et les envoyer dans le bloc amplificateur du sgtl5000.
+
+
+
   - Bypass numérique (ADC → DAC).
 
 ```c
@@ -349,7 +397,13 @@ void StartTask02(void const * argument)
 }
 ```
 
+Ce bloc est encore plus simple, ici on fait un bypass numérique, les samples arrivé du bloc adc du sgtl5000 par i2s sont directement renvoyé par i2s au bloc amplificateur, remarque le code précédent ne marchait pas bien car le memcpy est trop long, il vaut mieu faire une copy à la main du buffer dans la callback de dma avec une boucle for.
+
+
+
 ### 3.4 Filtre RC
+Nous implémentons alors un filtrage passe bas sur notre buffer, pour cela nous allons calculer ses coefficients  
+
 - Implémentation dans `RCFilter.c / RCFilter.h`.  
 - Structure :
   ```c
@@ -375,8 +429,16 @@ void StartTask02(void const * argument)
 
 ```
 ---
+## 4. Visualisation
 
-## 4. Organisation du projet
+
+## 5. Filtre RC
+
+
+## 6. Effet numérique
+
+
+## 7. Organisation du projet
 
 ```
 TP_Autoradio/
