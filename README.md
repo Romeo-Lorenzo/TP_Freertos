@@ -452,29 +452,184 @@ void StartTask02(void const * argument)
 
 Ci-dessus notre tache freertos utilisé pour le bypass numérique sans utiliser memcpy, le résultat est bien meilleure.
 
-
-
-### 3.4 Filtre RC
-Nous implémentons alors un filtrage passe bas sur notre buffer,afin d'améliorer la qualitée sonore.
-
-
-
-
-### 3.5 Effet audio
-- Réalisation d’un effet simple au choix (ex. tremolo, distorsion, delay…).  
-- Application de l’effet dans la chaîne de traitement audio.
-  
-```c
-
-```
----
 ## 4. Visualisation
+Maintenant que le sgtl est fonctionnel, est que nous obtenons des samples de l'adc relié au microphone, nous allons visualiser la puissance sonore: 
+
+Pour cela on récupère juste dans une autre tache notre petit buffer circulaire de reception dma d'i2s, et on fait une puissance RMS moyenne, par la suite on la clamp puis on affiche lineairement dans notre cas les led de 0 allumé si la puissance est nulle à 8 allumée si elle est de 32767:
+```c
+void VU_UpdateFromBuffer(int16_t *buf, uint32_t len)
+{
+    int64_t sum_sq = 0;
+    for (uint32_t i = 0; i < len; i++) {
+        int32_t s = buf[i];
+        sum_sq += (int64_t)s * (int64_t)s;
+    }
+
+    int32_t rms = (int32_t)sqrtf((float)sum_sq / (float)len);
+    if (rms > 32767) rms = 32767;
+
+    uint8_t level = (uint8_t)((rms * 8) / 32768);
+    if (level > 8) level = 8;
+
+    for (uint8_t i = 0; i < 8; i++) {
+        uint8_t on = (i < level) ? 0 : 1;
+
+        MCP23S17_SetPin(i,     on);
+        MCP23S17_SetPin(i + 8, on);
+    }
+}
+```
+On obtient donc un vu mettre, il serait peu etre mieux d'adapter le coefficient P entre puissance recu et nombre de led allumée mais cela marche très bien actuellement: 
+
+
+
+https://github.com/user-attachments/assets/e109a773-889d-464d-9e3e-81b22ae58576
+
+
 
 
 ## 5. Filtre RC
+Nous implémentons alors un filtrage passe bas sur notre buffer,afin d'améliorer la qualitée sonore.
 
+1. On a donc
+
+ <img width="271" height="73" alt="image" src="https://github.com/user-attachments/assets/a550a378-1c70-4022-8c86-1bcbe098d60e" />
+
+ Ainsi sous la forme demandé on a: X=RC et Y=1
+
+2.On passe en temps discret afin de le traiter numériquement on à donc:
+On pose:
+
+<img width="116" height="32" alt="image" src="https://github.com/user-attachments/assets/38502fa7-996e-434b-b1e6-315e3650d8c3" />
+
+3.Et alors:
+
+<img width="367" height="42" alt="image" src="https://github.com/user-attachments/assets/00b429d8-61eb-4295-9472-37032ee3a9ef" />
+
+Ainsi sous la forme demandé on a : A=1, B=K et D=1+K
+donc: 
+
+<img width="334" height="72" alt="image" src="https://github.com/user-attachments/assets/5f9b1ecd-1e8b-447a-a826-163de8e2110d" />
+
+4.Dans notre cas nous opérons notre stm32l4 à une fréquence de 80Mhz, donc à 48kHz cela nous laisse 1666 cycle d'horloge pour faire ces calculs au maximum, ce qui est très large car nous somme ici sur une centaine de cycles d'horloge de calcul par echantillons et encore moins sur l4 avec un fpu hardware.
+
+5.Nous implementons donc ce filtre dans un .c et un .h: 
+
+
+```c
+void RC_filter_init(h_RC_filter_t *h,uint16_t cutoff_frequency,uint16_t sampling_frequency)
+{
+    if (!h) return;
+
+    if (cutoff_frequency == 0) cutoff_frequency = 1;
+    if (sampling_frequency == 0) sampling_frequency = 1;
+
+    float fs = (float)sampling_frequency;
+    float fc = (float)cutoff_frequency;
+    float K  = fs / (2.0f * (float)M_PI * fc);
+
+    float A = 1.0f;
+    float B = K;
+    float D = 1.0f + K;
+
+    h->coeff_A = (uint32_t)(A * (float)SCALE + 0.5f);
+    h->coeff_B = (uint32_t)(B * (float)SCALE + 0.5f);
+    h->coeff_D = (uint32_t)(D * (float)SCALE + 0.5f);
+
+}
+
+uint16_t RC_filter_update(h_RC_filter_t *h, uint16_t input)
+{
+    if (!h) return input;
+
+    uint64_t num = 0;
+    num += (uint64_t)h->coeff_A * (uint64_t)input;
+    num += (uint64_t)h->coeff_B * (uint64_t)h->out_prev;
+
+    uint32_t den = h->coeff_D;
+    if (den == 0u) return input;
+
+    uint32_t y = (uint32_t)((num + (uint64_t)(den / 2u)) / (uint64_t)den);
+
+    if (y > 0xFFFFu) y = 0xFFFFu;//on clamp au cas ou
+    h->out_prev = (uint16_t)y;//on update l'etat precedent
+    return (uint16_t)y;
+}
+```
+Pour ce qui est des coefficient, nous allons pouvoir changer la fréquence de coupure en initialisant à nouveau le filtre à la volé, pour cela on crée une fonction que l'on ajoute au shell, remarque ne mettons pas l'état de la valeurs precedente retenu en structure à zero volontairement pour cela:
+
+```c 
+int fonction_filter(h_shell_t * h_shell, int argc, char ** argv)
+{
+	if(argc>0){
+		int freq=atoi(argv[1]);
+		RC_filter_init(&filter_struct,(uint16_t ) freq,(uint16_t ) SAMPLING_FREQ);
+		int size = snprintf(h_shell->print_buffer, BUFFER_SIZE, "filter cutoff freq at %d\r\n",freq);
+		h_shell->drv.transmit(h_shell->print_buffer, size);
+	}
+	else{
+		int size = snprintf(h_shell->print_buffer, BUFFER_SIZE, "mauvais arg\r\n");
+		h_shell->drv.transmit(h_shell->print_buffer, size);
+		return 0;
+	}
+	return 1;
+}
+```
+
+Resultat:
+
+<img width="301" height="181" alt="image" src="https://github.com/user-attachments/assets/e224ade6-790e-4a3d-bd87-ecf863b03276" />
+
+
+On obtient alors un son meilleur avec moins de crépitement.Un autre amélioration possible serait de couper l'ampli lorsque le niveau sonore est en dessous d'un seuil minimum.
+
+Puis il nous reste à appliquer le filtre pour cela on l'applique sur les buffer circulaire de la dma directement on obtient: 
+
+```c
+	  if (rx_half_flag)
+	  {
+	      rx_half_flag = 0;
+	      for (int i = 0; i < AUDIO_HALF_BYTES; i++)
+	      {
+	          uint16_t in = i2s_rx_buf[i];
+	          t0=DWT->CYCCNT;
+	          i2s_tx_buf[i] = RC_filter_update(&filter_struct, in);
+	          tps_filter=DWT->CYCCNT-t0;
+	      }
+	  }
+
+	  if (rx_full_flag)
+	  {
+	      rx_full_flag = 0;
+	      for (int i = 0; i < AUDIO_HALF_BYTES; i++)
+	      {
+	          uint16_t in = i2s_rx_buf[i + AUDIO_HALF_BYTES];
+	          i2s_tx_buf[i + AUDIO_HALF_BYTES] =
+	              RC_filter_update(&filter_struct, in);
+	      }
+	  }
+
+```
+
+Remarque comme vous pouvez le voir nous utilisons les compteur DWT pour connaitre précisément le temps d'horloge necessaire au calcul d'un échantillons:
+
+<img width="503" height="24" alt="image" src="https://github.com/user-attachments/assets/22d10e25-f0a7-4370-9d50-a479e5c1fa33" />
+
+Comme prévu nous avons ici 301 cycles d'horloges ce qui est bien inférieur au 1666 maximum autorisé, le procésseur ne travaille que 18% du temps sur le filtre RC .
+
+
+
+On obtient alors un son meilleur avec moins de crépitement.Un autre amélioration possible serait de couper l'ampli lorsque le niveau sonore est en dessous d'un seuil minimum.
 
 ## 6. Effet numérique
+
+Nous allons mettre en place l'effet du tremolo, il s'agit de creer une sorte d'envellope sinusoidale au son: 
+
+<img width="404" height="685" alt="image" src="https://github.com/user-attachments/assets/62d5b4b2-49d6-4dc1-b33b-e57b21b05486" />
+
+Pour cela Nous jouons directement sur les buffer entre le moment ou ils ont été recu et le moment ou ils vont être envoyé, cela donne donc:
+
+
 
 
 ## 7. Organisation du projet
