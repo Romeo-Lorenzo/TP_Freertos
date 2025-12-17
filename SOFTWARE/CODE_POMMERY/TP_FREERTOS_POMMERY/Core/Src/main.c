@@ -31,6 +31,7 @@
 #include "shell.h"
 #include "MCP23S17.h"
 #include "sgtl5000.h"
+#include "RCfilter.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -63,6 +64,8 @@ volatile uint8_t rx_full_flag = 0;
 
 uint8_t sai_send_buf[256];
 h_shell_t shellstruct;
+
+h_RC_filter_t filter_struct;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -159,6 +162,16 @@ int main(void)
   __HAL_SAI_ENABLE(&hsai_BlockB2);
 
   sgtl5000_init(&h_sgtl5000);
+
+  RC_filter_init(&filter_struct,22000,48000);
+
+  CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+
+  // Remettre le compteur à zéro
+  DWT->CYCCNT = 0;
+
+  // Activer le compteur de cycles
+  DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
 
 
   //gen_triangle();

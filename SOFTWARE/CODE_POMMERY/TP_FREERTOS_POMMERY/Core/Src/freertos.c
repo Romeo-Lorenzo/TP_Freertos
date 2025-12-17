@@ -28,6 +28,7 @@
 #include "shell.h"
 #include "MCP23S17.h"
 #include "sgtl5000.h"
+#include "RCfilter.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -61,6 +62,15 @@ extern volatile uint8_t rx_full_flag;
 extern SAI_HandleTypeDef hsai_BlockA2;  // TX
 extern SAI_HandleTypeDef hsai_BlockB2;  // RX
 
+extern h_RC_filter_t filter_struct;
+
+uint32_t tps_filter=0;
+
+
+int tremolo = 0;
+int trem_step = 20;
+int trem_min = 4000;
+int trem_max = 32767;
 
 
 /* USER CODE END Variables */
@@ -94,6 +104,55 @@ int fonction_led(h_shell_t * h_shell, int argc, char ** argv)
 		MCP23S17_SetPin(lednum,ledstate );
 		int size = snprintf(h_shell->print_buffer, BUFFER_SIZE, "LED n°%d\r\n",lednum);
 			h_shell->drv.transmit(h_shell->print_buffer, size);
+
+	}
+	else{
+		int size = snprintf(h_shell->print_buffer, BUFFER_SIZE, "mauvais arg\r\n");
+		h_shell->drv.transmit(h_shell->print_buffer, size);
+		return 0;
+	}
+
+
+
+	return 1;
+}
+
+int fonction_filter(h_shell_t * h_shell, int argc, char ** argv)
+{
+	if(argc>0){
+		int freq=atoi(argv[1]);
+		RC_filter_init(&filter_struct,(uint16_t ) freq,(uint16_t ) SAMPLING_FREQ);
+		int size = snprintf(h_shell->print_buffer, BUFFER_SIZE, "filter cutoff freq at %d\r\n",freq);
+		h_shell->drv.transmit(h_shell->print_buffer, size);
+	}
+	else{
+		int size = snprintf(h_shell->print_buffer, BUFFER_SIZE, "mauvais arg\r\n");
+		h_shell->drv.transmit(h_shell->print_buffer, size);
+		return 0;
+	}
+
+
+
+	return 1;
+}
+
+int fonction_tremolo(h_shell_t * h_shell, int argc, char ** argv)
+{
+	if(argc>0){
+		if(atoi(argv[1])==1){
+			tremolo=0;
+			trem_step=20;
+			int size = snprintf(h_shell->print_buffer, BUFFER_SIZE, "tremolo enabled\r\n");
+			h_shell->drv.transmit(h_shell->print_buffer, size);
+
+		}
+		else{
+			tremolo=32767;
+			trem_step=0;
+			int size = snprintf(h_shell->print_buffer, BUFFER_SIZE, "tremolo disabled\r\n");
+			h_shell->drv.transmit(h_shell->print_buffer, size);
+
+		}
 
 	}
 	else{
@@ -213,27 +272,58 @@ void StartTask02(void const * argument)
     HAL_SAI_Receive_DMA(&hsai_BlockB2,(int16_t *)i2s_rx_buf,AUDIO_BUF_BYTES);
 
     HAL_SAI_Transmit_DMA(&hsai_BlockA2,(int16_t *)i2s_tx_buf,AUDIO_BUF_BYTES);
+    uint32_t t0=0;
   /* Infinite loop */
   for(;;)
   {
+	  if (rx_half_flag)
+	  {
+	      rx_half_flag = 0;
 
+	      for (int i = 0; i < AUDIO_HALF_BYTES; i++)
+	      {
+	          int16_t x = (int16_t)i2s_rx_buf[i];
 
+	          tremolo += trem_step;
+	          if (tremolo >= trem_max) { tremolo = trem_max; trem_step = -trem_step; }
+	          if (tremolo <= trem_min) { tremolo = trem_min; trem_step = -trem_step; }
 
-	        if (rx_half_flag)
-	        {
-	            rx_half_flag = 0;
-	            for(int i=0;i<AUDIO_HALF_BYTES;i++){
-	            	i2s_tx_buf[i]=i2s_rx_buf[i];
-	            }
-	        }
-	        if (rx_full_flag)
-	        {
-	            rx_full_flag = 0;
-	            for(int i=0;i<AUDIO_HALF_BYTES;i++){
-	            	i2s_tx_buf[i+AUDIO_HALF_BYTES]=i2s_rx_buf[i+AUDIO_HALF_BYTES];
+	          int32_t y = ((int32_t)x * (int32_t)tremolo) / 32767;
 
-	            }
-	        }
+	          if (y > 32767) y = 32767;
+	          if (y < -32768) y = -32768;
+
+	          i2s_tx_buf[i] = RC_filter_update(&filter_struct, (uint16_t)(int16_t)y);
+	      }
+
+	  }
+
+	  if (rx_full_flag)
+	  {
+	      rx_full_flag = 0;
+
+	      t0 = DWT->CYCCNT;
+
+	      for (int i = 0; i < AUDIO_HALF_BYTES; i++)
+	      {
+	          int idx = i + AUDIO_HALF_BYTES;
+	          int16_t x = (int16_t)i2s_rx_buf[idx];
+
+	          tremolo += trem_step;
+	          if (tremolo >= trem_max) { tremolo = trem_max; trem_step = -trem_step; }
+	          if (tremolo <= trem_min) { tremolo = trem_min; trem_step = -trem_step; }
+
+	          int32_t y = ((int32_t)x * (int32_t)tremolo) / 32767;
+
+	          if (y > 32767) y = 32767;
+	          if (y < -32768) y = -32768;
+
+	          i2s_tx_buf[idx] = RC_filter_update(&filter_struct, (uint16_t)(int16_t)y);
+	      }
+
+	      tps_filter = DWT->CYCCNT - t0;
+	  }
+
   }
   /* USER CODE END StartTask02 */
 }
@@ -251,8 +341,9 @@ void Startshelltask(void const * argument)
 
 
 	  shell_init(&shellstruct);
-	  shell_add(&shellstruct, 'f', fonction, "Une fonction inutile");
 	  shell_add(&shellstruct, 'l', fonction_led, "control des led");
+	  shell_add(&shellstruct, 'f', fonction_filter, "Control du filtre RC");
+	  shell_add(&shellstruct, 't', fonction_tremolo, "Active ou desactive le tremolo");
   /* Infinite loop */
   for(;;)
   {

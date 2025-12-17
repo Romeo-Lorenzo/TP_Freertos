@@ -313,29 +313,21 @@ void build_sai_stereo_from_triangle(void)
 void VU_UpdateFromBuffer(int16_t *buf, uint32_t len)
 {
     int64_t sum_sq = 0;
-
-    // 1) somme des carrés
     for (uint32_t i = 0; i < len; i++) {
         int32_t s = buf[i];
         sum_sq += (int64_t)s * (int64_t)s;
     }
 
-    // 2) RMS = sqrt(mean)
     int32_t rms = (int32_t)sqrtf((float)sum_sq / (float)len);
     if (rms > 32767) rms = 32767;
 
-    // 3) Normalisation : 0..32767 -> 0..8 niveaux
     uint8_t level = (uint8_t)((rms * 8) / 32768);
     if (level > 8) level = 8;
 
-    // 4) Mise à jour : LEDs 0..7 = VU-mètre
-    //                   LEDs 8..15 = copie exacte
-    // Logique inversée : 0 = ON, 1 = OFF
-
     for (uint8_t i = 0; i < 8; i++) {
-        uint8_t on = (i < level) ? 0 : 1;  // inversé : ON=0, OFF=1
+        uint8_t on = (i < level) ? 0 : 1;
 
-        MCP23S17_SetPin(i,     on);   // LED 0..7
-        MCP23S17_SetPin(i + 8, on);   // LED 8..15 copie
+        MCP23S17_SetPin(i,     on);
+        MCP23S17_SetPin(i + 8, on);
     }
 }
