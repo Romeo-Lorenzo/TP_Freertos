@@ -629,7 +629,100 @@ Nous allons mettre en place l'effet du tremolo, il s'agit de creer une sorte d'e
 
 Pour cela Nous jouons directement sur les buffer entre le moment ou ils ont été recu et le moment ou ils vont être envoyé, cela donne donc:
 
+```c
+	  if (rx_half_flag)
+	  {
+	      rx_half_flag = 0;
 
+	      for (int i = 0; i < AUDIO_HALF_BYTES; i++)
+	      {
+	          int16_t x = (int16_t)i2s_rx_buf[i];
+
+	          tremolo += trem_step;
+	          if (tremolo >= trem_max) { tremolo = trem_max; trem_step = -trem_step; }
+	          if (tremolo <= trem_min) { tremolo = trem_min; trem_step = -trem_step; }
+
+	          int32_t y = ((int32_t)x * (int32_t)tremolo) / 32767;
+
+	          if (y > 32767) y = 32767;
+	          if (y < -32768) y = -32768;
+
+	          i2s_tx_buf[i] = RC_filter_update(&filter_struct, (uint16_t)(int16_t)y);
+	      }
+
+	  }
+
+	  if (rx_full_flag)
+	  {
+	      rx_full_flag = 0;
+
+	      t0 = DWT->CYCCNT;
+
+	      for (int i = 0; i < AUDIO_HALF_BYTES; i++)
+	      {
+	          int idx = i + AUDIO_HALF_BYTES;
+	          int16_t x = (int16_t)i2s_rx_buf[idx];
+
+	          tremolo += trem_step;
+	          if (tremolo >= trem_max) { tremolo = trem_max; trem_step = -trem_step; }
+	          if (tremolo <= trem_min) { tremolo = trem_min; trem_step = -trem_step; }
+
+	          int32_t y = ((int32_t)x * (int32_t)tremolo) / 32767;
+
+	          if (y > 32767) y = 32767;
+	          if (y < -32768) y = -32768;
+
+	          i2s_tx_buf[idx] = RC_filter_update(&filter_struct, (uint16_t)(int16_t)y);
+	      }
+
+	      tps_filter = DWT->CYCCNT - t0;
+	  }
+```
+
+Nous utilisons une implémentation simple du tremolo, ici notre envellopement est triangulaire, tout ce que l'on fait c'est que on multiplie la valeurs de chaque échantillons par un coefficient qui alterne triangulairement entre une valeurs max et une valeurs minimum voici les valeurs de test: 
+
+```c
+int tremolo = 0;
+int trem_step = 20;
+int trem_min = 4000;
+int trem_max = 32767;
+```
+
+Nous avons aussi implémenter une fonction dans le shell permettant d'activer ou de désactiver l'effet tremolo:
+
+```c
+int fonction_tremolo(h_shell_t * h_shell, int argc, char ** argv)
+{
+	if(argc>0){
+		if(atoi(argv[1])==1){
+			tremolo=0;
+			trem_step=20;
+			int size = snprintf(h_shell->print_buffer, BUFFER_SIZE, "tremolo enabled\r\n");
+			h_shell->drv.transmit(h_shell->print_buffer, size);
+
+		}
+		else{
+			tremolo=32767;
+			trem_step=0;
+			int size = snprintf(h_shell->print_buffer, BUFFER_SIZE, "tremolo disabled\r\n");
+			h_shell->drv.transmit(h_shell->print_buffer, size);
+
+		}
+
+	}
+	else{
+		int size = snprintf(h_shell->print_buffer, BUFFER_SIZE, "mauvais arg\r\n");
+		h_shell->drv.transmit(h_shell->print_buffer, size);
+		return 0;
+	}
+
+
+
+	return 1;
+}
+```
+
+<img width="368" height="303" alt="image" src="https://github.com/user-attachments/assets/20eb773f-848d-43da-a8c9-d0f387a26514" />
 
 
 ## 7. Organisation du projet
@@ -651,21 +744,21 @@ TP_Autoradio/
 
 ---
 
-## 5. Validation
+## 8. Validation
 
 Chaque étape du TP doit être validée par le professeur avant de passer à la suivante.  
 En cas de doute, demander validation avant de modifier le matériel ou le code.
 
 ---
 
-## 6. Auteurs
+## 9. Auteurs
 
 - Mathieu POMMERY
 - Lorenzo ROMEO
 
 ---
 
-## 7. Références
+## 10. Références
 
 - Datasheet SGTL5000  
 - Documentation STM32L476RG  
